@@ -299,191 +299,25 @@ static struct drm_connector *get_connector(struct drm_encoder *encoder)
 	return NULL;
 }
 
-// static void ti_bridge_enable(struct drm_bridge *bridge)
-// {
-// 	struct ti_data *ti = bridge_to_ti(bridge);
-// 	u32 hback_porch, hsync_len, hfront_porch, hactive, htime1, htime2;
-// 	u32 vback_porch, vsync_len, vfront_porch, vactive, vtime1, vtime2;
-// 	u8 val=0, lvds_pll, dsi_clk;
-// 	u16 dsiclk, clkdiv, byteclk, t1, t2, t3, vsdelay;
-// 	bool lvds_format_24bpp;
-// 	bool lvds_format_jeida;           
-// 	bool pll_en_flag = false;
-// 	int i;
-	
-// 	struct drm_display_mode *mode;
-// 	struct drm_connector *connector = get_connector(bridge->encoder);
-	
-// 	dev_info(ti->dev, ">>> ti_bridge_enable() called\n");
-// 	d2l_read(ti->i2c, REG_ID(0), &val);
-// 	dev_info(ti->dev, "DSI->LVDS V1 Chip ID %02d\n", val & 0xFF);
-	
-// 	switch (connector->display_info.bus_formats[0]) {
-// 	case MEDIA_BUS_FMT_RGB666_1X7X3_SPWG:
-// 		lvds_format_24bpp = false;
-// 		lvds_format_jeida = true;
-// 		break;
-// 	case MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA:
-// 		lvds_format_24bpp = true;
-// 		lvds_format_jeida = true;
-// 		break;
-// 	case MEDIA_BUS_FMT_RGB888_1X7X4_SPWG:
-// 		lvds_format_24bpp = true;
-// 		lvds_format_jeida = false;
-// 		break;
-// 	default:
-// 		/*
-// 		 * Some bridges still don't set the correct
-// 		 * LVDS bus pixel format, use SPWG24 default
-// 		 * format until those are fixed.
-// 		 */
-// 		lvds_format_24bpp = true;
-// 		lvds_format_jeida = false;
-// 		dev_info(ti->dev,
-// 			 "Unsupported LVDS bus format 0x%04x, please check output bridge driver. Falling back to SPWG24.\n",
-// 			 connector->display_info.bus_formats[0]);
-// 		break;
-// 	}
-
-// 	mode = &bridge->encoder->crtc->state->adjusted_mode;
-	
-// 	lvds_pll = sn65dsi83_get_lvds_pll(mode);
-	
-// 	lvds_pll = ((lvds_pll<<1) | REG_RC_LVDS_PLL_HS_CLK_SRC_DPHY);
-	
-// 	dsi_clk = sn65dsi83_get_dsi_clk(ti, mode);
-	
-// 	/* Disable PLL */
-// 	d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);   //0d
-// 	usleep_range(1000, 1100);
-	
-// 	/* Reference clock derived from DSI link clock. */
-// 	d2l_write(ti->i2c, REG_RC_LVDS_PLL, lvds_pll);  //0a
-// 	d2l_write(ti->i2c, REG_DSI_CLK, dsi_clk);      //12
-// 	d2l_write(ti->i2c, REG_RC_DSI_CLK, REG_RC_DSI_CLK_DSI_CLK_DIVIDER(sn65dsi83_get_dsi_div(ti)));   //0b
-// 	d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);    //0d
-	
-// 	/* Set number of DSI lanes and LVDS link config. */
-// 	d2l_write(ti->i2c, REG_DSI_LANE, 0x30);     //10
-	
-// 	/* No equalization. */
-// 	d2l_write(ti->i2c, REG_DSI_EQ, 0x00);       //11
-
-// 	/* Set up sync signal polarity. */
-// 	val = 0x10 | (mode->flags & DRM_MODE_FLAG_NHSYNC ?
-// 	       REG_LVDS_FMT_HS_NEG_POLARITY : 0) |
-// 	      (mode->flags & DRM_MODE_FLAG_NVSYNC ?
-// 	       REG_LVDS_FMT_VS_NEG_POLARITY : 0); //Default value 0x10 based on the sn65dsi83 datasheet for 0x18 register
-		   
-// 	/* Set up bits-per-pixel, 18bpp or 24bpp. */
-// 	if (lvds_format_24bpp) {
-// 		val |= REG_LVDS_FMT_CHA_24BPP_MODE;
-// 	}
-	
-// 	/* Set up LVDS format, JEIDA/Format 1 or SPWG/Format 2 */
-// 	if (lvds_format_jeida) {
-// 		val |= REG_LVDS_FMT_CHA_24BPP_FORMAT1;
-// 	}
-	
-// 	d2l_write(ti->i2c, REG_LVDS_FMT, val);       //18
-// 	d2l_write(ti->i2c, REG_LVDS_VCOM, 0x00);     //19
-// 	d2l_write(ti->i2c, REG_LVDS_LANE, 0x00);     //1a
-// 	d2l_write(ti->i2c, REG_LVDS_CM, 0x00);       //1b
-	
-	
-// 	hback_porch = mode->htotal - mode->hsync_end;
-// 	hsync_len  = mode->hsync_end - mode->hsync_start;
-// 	vback_porch = mode->vtotal - mode->vsync_end;
-// 	vsync_len  = mode->vsync_end - mode->vsync_start;
-// 	hfront_porch = mode->hsync_start - mode->hdisplay;	
-// 	hactive = mode->hdisplay;
-// 	vfront_porch = mode->vsync_start - mode->vdisplay;
-// 	vactive = mode->vdisplay;
-
-	
-// 	d2l_write(ti->i2c, REG_VID_CHA_ACTIVE_LINE_LENGTH_LOW, (u8)(hactive&0xff));            //20
-// 	d2l_write(ti->i2c, REG_VID_CHA_ACTIVE_LINE_LENGTH_HIGH, (u8)((hactive>>8)&0xff));      //21
-// 	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_DISPLAY_SIZE_LOW, (u8)(vactive&0xff));         //24
-// 	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_DISPLAY_SIZE_HIGH, (u8)((vactive>>8)&0xff));   //25
-	
-	
-// 	/* 32 + 1 pixel clock to ensure proper operation */
-// 	d2l_write(ti->i2c, REG_VID_CHA_SYNC_DELAY_LOW, 0xff);               //28
-// 	d2l_write(ti->i2c, REG_VID_CHA_SYNC_DELAY_HIGH, 0x00);              //29
-// 	d2l_write(ti->i2c, REG_VID_CHA_HSYNC_PULSE_WIDTH_LOW, (u8)(hsync_len&0xff));             //2c
-// 	d2l_write(ti->i2c, REG_VID_CHA_HSYNC_PULSE_WIDTH_HIGH, (u8)((hsync_len>>8)&0xff));       //2d
-// 	d2l_write(ti->i2c, REG_VID_CHA_VSYNC_PULSE_WIDTH_LOW, (u8)(vsync_len&0xff));             //30
-// 	d2l_write(ti->i2c, REG_VID_CHA_VSYNC_PULSE_WIDTH_HIGH, (u8)((vsync_len>>8)&0xff));       //31
-// 	d2l_write(ti->i2c, REG_VID_CHA_HORIZONTAL_BACK_PORCH, (u8)(hback_porch&0xff));           //34
-// 	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_BACK_PORCH, (u8)(vback_porch&0xff));             //36
-// 	d2l_write(ti->i2c, REG_VID_CHA_HORIZONTAL_FRONT_PORCH, (u8)(hfront_porch&0xff));         //38
-// 	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_FRONT_PORCH, (u8)(vfront_porch&0xff));           //3a
-// 	d2l_write(ti->i2c, REG_VID_CHA_TEST_PATTERN, 0x00);                 //3c
-	
-// 	/* Enable PLL */
-// 	d2l_write(ti->i2c, REG_RC_PLL_EN, REG_RC_PLL_EN_PLL_EN);    
-
-	
-
-// 	for(i=0; i<10; i++)
-// 	{
-// 		usleep_range(500, 1000);
-// 		val=0;
-// 		d2l_read(ti->i2c, REG_RC_LVDS_PLL, &val);
-// 		if(val & 0x80 == 0x80)
-// 		{
-// 			pll_en_flag = true;
-// 			break;
-// 		}
-// 	}
-	
-// 	if (pll_en_flag==false) {
-// 		dev_info(ti->dev, "failed to lock PLL, ret=%i\n", pll_en_flag);
-// 		/* On failure, disable PLL again and exit. */
-// 		d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);
-// 		return;
-// 	}
-
-// 	if (pll_en_flag)
-// 		dev_info(ti->dev, "PLL locked\n");
-// 	else
-// 		dev_err(ti->dev, "PLL failed to lock\n");
-
-// 	/* Trigger reset after CSR register update. */
-// 	d2l_write(ti->i2c, REG_RC_RESET, REG_RC_RESET_SOFT_RESET);
-// 	usleep_range(10000, 11000);
-	
-// 	/* Clear all errors that got asserted during initialization. */
-// 	val=0;
-// 	d2l_read(ti->i2c, REG_IRQ_STAT, &val);
-// 	d2l_write(ti->i2c, REG_IRQ_STAT, val);
-	
-// }
-
 static void ti_bridge_enable(struct drm_bridge *bridge)
 {
 	struct ti_data *ti = bridge_to_ti(bridge);
+	u32 hback_porch, hsync_len, hfront_porch, hactive, htime1, htime2;
+	u32 vback_porch, vsync_len, vfront_porch, vactive, vtime1, vtime2;
+	u8 val=0, lvds_pll, dsi_clk;
+	u16 dsiclk, clkdiv, byteclk, t1, t2, t3, vsdelay;
+	bool lvds_format_24bpp;
+	bool lvds_format_jeida;           
+	bool pll_en_flag = false;
+	int i;
+	
 	struct drm_display_mode *mode;
 	struct drm_connector *connector = get_connector(bridge->encoder);
-
-	u32 hback_porch, hsync_len, hfront_porch, hactive;
-	u32 vback_porch, vsync_len, vfront_porch, vactive;
-	u8 val = 0, lvds_pll, dsi_clk;
-	bool lvds_format_24bpp, lvds_format_jeida, pll_en_flag = false;
-	int i;
-
-	dev_info(ti->dev, ">>> ti_bridge_enable() called\n");
-
-	d2l_read(ti->i2c, REG_ID(0), &val);
-	dev_info(ti->dev, "Chip ID: 0x%02x\n", val & 0xFF);
-
-	mode = &bridge->encoder->crtc->state->adjusted_mode;
-	dev_info(ti->dev, "Mode: %dx%d @ %dHz, Pixel Clock: %d kHz\n",
-	         mode->hdisplay, mode->vdisplay,
-	         drm_mode_vrefresh(mode), mode->clock);
-
-	dev_info(ti->dev, "Bus format: 0x%04x\n", connector->display_info.bus_formats[0]);
-
+	
+	
+	 d2l_read(ti->i2c, REG_ID(0), &val);
+	 dev_info(ti->dev, "DSI->LVDS V1 Chip ID %02d\n", val & 0xFF);
+	
 	switch (connector->display_info.bus_formats[0]) {
 	case MEDIA_BUS_FMT_RGB666_1X7X3_SPWG:
 		lvds_format_24bpp = false;
@@ -498,123 +332,125 @@ static void ti_bridge_enable(struct drm_bridge *bridge)
 		lvds_format_jeida = false;
 		break;
 	default:
+		/*
+		 * Some bridges still don't set the correct
+		 * LVDS bus pixel format, use SPWG24 default
+		 * format until those are fixed.
+		 */
 		lvds_format_24bpp = true;
 		lvds_format_jeida = false;
-		dev_info(ti->dev, "Unsupported LVDS format, falling back to SPWG24\n");
+		dev_info(ti->dev,
+			 "Unsupported LVDS bus format 0x%04x, please check output bridge driver. Falling back to SPWG24.\n",
+			 connector->display_info.bus_formats[0]);
 		break;
 	}
 
-	lvds_pll = ((sn65dsi83_get_lvds_pll(mode) << 1) | REG_RC_LVDS_PLL_HS_CLK_SRC_DPHY);
+	mode = &bridge->encoder->crtc->state->adjusted_mode;
+	
+	lvds_pll = sn65dsi83_get_lvds_pll(mode);
+	
+	lvds_pll = ((lvds_pll<<1) | REG_RC_LVDS_PLL_HS_CLK_SRC_DPHY);
+	
 	dsi_clk = sn65dsi83_get_dsi_clk(ti, mode);
-
-	dev_info(ti->dev, "LVDS_PLL: 0x%02x, DSI_CLK: 0x%02x, DSI_DIV: %u\n",
-	         lvds_pll, dsi_clk, sn65dsi83_get_dsi_div(ti));
-
-	// Disable PLL
-	d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);
+	
+	/* Disable PLL */
+	d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);   //0d
 	usleep_range(1000, 1100);
+	
+	/* Reference clock derived from DSI link clock. */
+	d2l_write(ti->i2c, REG_RC_LVDS_PLL, lvds_pll);  //0a
+	d2l_write(ti->i2c, REG_DSI_CLK, dsi_clk);      //12
+	d2l_write(ti->i2c, REG_RC_DSI_CLK, REG_RC_DSI_CLK_DSI_CLK_DIVIDER(sn65dsi83_get_dsi_div(ti)));   //0b
+	d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);    //0d
+	
+	/* Set number of DSI lanes and LVDS link config. */
+	d2l_write(ti->i2c, REG_DSI_LANE, 0x30);     //10
+	
+	/* No equalization. */
+	d2l_write(ti->i2c, REG_DSI_EQ, 0x00);       //11
 
-	// Write PLL and clock config
-	d2l_write(ti->i2c, REG_RC_LVDS_PLL, lvds_pll);
-	d2l_write(ti->i2c, REG_DSI_CLK, dsi_clk);
-	d2l_write(ti->i2c, REG_RC_DSI_CLK,
-	          REG_RC_DSI_CLK_DSI_CLK_DIVIDER(sn65dsi83_get_dsi_div(ti)));
-	d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);
-
-	// Enable SOT_ERR_TOL and set 2 DSI lanes
-	d2l_write(ti->i2c, REG_DSI_LANE, 0x31);       // 0x30 + BIT(0)
-	d2l_write(ti->i2c, REG_DSI_EQ, 0xC0);         // Enable EQ for clk+data
-
-	val = 0x10;
-	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
-		val |= REG_LVDS_FMT_HS_NEG_POLARITY;
-	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
-		val |= REG_LVDS_FMT_VS_NEG_POLARITY;
-	if (lvds_format_24bpp)
+	/* Set up sync signal polarity. */
+	val = 0x10 | (mode->flags & DRM_MODE_FLAG_NHSYNC ?
+	       REG_LVDS_FMT_HS_NEG_POLARITY : 0) |
+	      (mode->flags & DRM_MODE_FLAG_NVSYNC ?
+	       REG_LVDS_FMT_VS_NEG_POLARITY : 0); //Default value 0x10 based on the sn65dsi83 datasheet for 0x18 register
+		   
+	/* Set up bits-per-pixel, 18bpp or 24bpp. */
+	if (lvds_format_24bpp) {
 		val |= REG_LVDS_FMT_CHA_24BPP_MODE;
-	if (lvds_format_jeida)
+	}
+	
+	/* Set up LVDS format, JEIDA/Format 1 or SPWG/Format 2 */
+	if (lvds_format_jeida) {
 		val |= REG_LVDS_FMT_CHA_24BPP_FORMAT1;
-
-	d2l_write(ti->i2c, REG_LVDS_FMT, val);
-	d2l_write(ti->i2c, REG_LVDS_VCOM, 0x00);
-	d2l_write(ti->i2c, REG_LVDS_LANE, 0x00);
-	d2l_write(ti->i2c, REG_LVDS_CM, 0x00);
-
-	// Horizontal timing
+	}
+	
+	d2l_write(ti->i2c, REG_LVDS_FMT, val);       //18
+	d2l_write(ti->i2c, REG_LVDS_VCOM, 0x00);     //19
+	d2l_write(ti->i2c, REG_LVDS_LANE, 0x00);     //1a
+	d2l_write(ti->i2c, REG_LVDS_CM, 0x00);       //1b
+	
+	
 	hback_porch = mode->htotal - mode->hsync_end;
-	hsync_len = mode->hsync_end - mode->hsync_start;
-	hfront_porch = mode->hsync_start - mode->hdisplay;
-	hactive = mode->hdisplay;
-
-	// Vertical timing
+	hsync_len  = mode->hsync_end - mode->hsync_start;
 	vback_porch = mode->vtotal - mode->vsync_end;
-	vsync_len = mode->vsync_end - mode->vsync_start;
+	vsync_len  = mode->vsync_end - mode->vsync_start;
+	hfront_porch = mode->hsync_start - mode->hdisplay;	
+	hactive = mode->hdisplay;
 	vfront_porch = mode->vsync_start - mode->vdisplay;
 	vactive = mode->vdisplay;
 
-	dev_info(ti->dev, "H: active=%u, fp=%u, bp=%u, sync=%u\n",
-	         hactive, hfront_porch, hback_porch, hsync_len);
-	dev_info(ti->dev, "V: active=%u, fp=%u, bp=%u, sync=%u\n",
-	         vactive, vfront_porch, vback_porch, vsync_len);
-
-	d2l_write(ti->i2c, REG_VID_CHA_ACTIVE_LINE_LENGTH_LOW, hactive & 0xff);
-	d2l_write(ti->i2c, REG_VID_CHA_ACTIVE_LINE_LENGTH_HIGH, hactive >> 8);
-	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_DISPLAY_SIZE_LOW, vactive & 0xff);
-	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_DISPLAY_SIZE_HIGH, vactive >> 8);
-	d2l_write(ti->i2c, REG_VID_CHA_SYNC_DELAY_LOW, 0x21);  // try 0x21 or 0x30
-	d2l_write(ti->i2c, REG_VID_CHA_SYNC_DELAY_HIGH, 0x00);
-	d2l_write(ti->i2c, REG_VID_CHA_HSYNC_PULSE_WIDTH_LOW, hsync_len & 0xff);
-	d2l_write(ti->i2c, REG_VID_CHA_HSYNC_PULSE_WIDTH_HIGH, hsync_len >> 8);
-	d2l_write(ti->i2c, REG_VID_CHA_VSYNC_PULSE_WIDTH_LOW, vsync_len & 0xff);
-	d2l_write(ti->i2c, REG_VID_CHA_VSYNC_PULSE_WIDTH_HIGH, vsync_len >> 8);
-	d2l_write(ti->i2c, REG_VID_CHA_HORIZONTAL_BACK_PORCH, hback_porch);
-	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_BACK_PORCH, vback_porch);
-	d2l_write(ti->i2c, REG_VID_CHA_HORIZONTAL_FRONT_PORCH, hfront_porch);
-	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_FRONT_PORCH, vfront_porch);
-	d2l_write(ti->i2c, REG_VID_CHA_TEST_PATTERN, 0x00);
-
-	d2l_write(ti->i2c, REG_RC_PLL_EN, REG_RC_PLL_EN_PLL_EN);
-
-	for (i = 0; i < 10; i++) {
+	
+	d2l_write(ti->i2c, REG_VID_CHA_ACTIVE_LINE_LENGTH_LOW, (u8)(hactive&0xff));            //20
+	d2l_write(ti->i2c, REG_VID_CHA_ACTIVE_LINE_LENGTH_HIGH, (u8)((hactive>>8)&0xff));      //21
+	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_DISPLAY_SIZE_LOW, (u8)(vactive&0xff));         //24
+	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_DISPLAY_SIZE_HIGH, (u8)((vactive>>8)&0xff));   //25
+	
+	
+	/* 32 + 1 pixel clock to ensure proper operation */
+	d2l_write(ti->i2c, REG_VID_CHA_SYNC_DELAY_LOW, 0xff);               //28
+	d2l_write(ti->i2c, REG_VID_CHA_SYNC_DELAY_HIGH, 0x00);              //29
+	d2l_write(ti->i2c, REG_VID_CHA_HSYNC_PULSE_WIDTH_LOW, (u8)(hsync_len&0xff));             //2c
+	d2l_write(ti->i2c, REG_VID_CHA_HSYNC_PULSE_WIDTH_HIGH, (u8)((hsync_len>>8)&0xff));       //2d
+	d2l_write(ti->i2c, REG_VID_CHA_VSYNC_PULSE_WIDTH_LOW, (u8)(vsync_len&0xff));             //30
+	d2l_write(ti->i2c, REG_VID_CHA_VSYNC_PULSE_WIDTH_HIGH, (u8)((vsync_len>>8)&0xff));       //31
+	d2l_write(ti->i2c, REG_VID_CHA_HORIZONTAL_BACK_PORCH, (u8)(hback_porch&0xff));           //34
+	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_BACK_PORCH, (u8)(vback_porch&0xff));             //36
+	d2l_write(ti->i2c, REG_VID_CHA_HORIZONTAL_FRONT_PORCH, (u8)(hfront_porch&0xff));         //38
+	d2l_write(ti->i2c, REG_VID_CHA_VERTICAL_FRONT_PORCH, (u8)(vfront_porch&0xff));           //3a
+	d2l_write(ti->i2c, REG_VID_CHA_TEST_PATTERN, 0x00);                 //3c
+	
+	/* Enable PLL */
+	d2l_write(ti->i2c, REG_RC_PLL_EN, REG_RC_PLL_EN_PLL_EN);    
+	
+	for(i=0; i<10; i++)
+	{
 		usleep_range(500, 1000);
-		val = 0;
+		val=0;
 		d2l_read(ti->i2c, REG_RC_LVDS_PLL, &val);
-		dev_info(ti->dev, "PLL lock status read: 0x%02x\n", val);
-		if (val & REG_RC_LVDS_PLL_PLL_EN_STAT) {
+		if(val & 0x80 == 0x80)
+		{
 			pll_en_flag = true;
 			break;
 		}
 	}
-
-	if (pll_en_flag)
-		dev_info(ti->dev, "PLL locked\n");
-	else {
-		dev_err(ti->dev, "PLL failed to lock\n");
+	
+	if (pll_en_flag==false) {
+		dev_info(ti->dev, "failed to lock PLL, ret=%i\n", pll_en_flag);
+		/* On failure, disable PLL again and exit. */
 		d2l_write(ti->i2c, REG_RC_PLL_EN, 0x00);
 		return;
 	}
-
-	usleep_range(20000, 21000);
-	d2l_read(ti->i2c, REG_RC_LVDS_PLL, &val);
-	dev_info(ti->dev, "PLL status post-reset: 0x%02x\n", val);
-
+	/* Trigger reset after CSR register update. */
 	d2l_write(ti->i2c, REG_RC_RESET, REG_RC_RESET_SOFT_RESET);
 	usleep_range(10000, 11000);
-	dev_info(ti->dev, "Soft reset triggered\n");
-
-	val = 0;
+	
+	/* Clear all errors that got asserted during initialization. */
+	val=0;
 	d2l_read(ti->i2c, REG_IRQ_STAT, &val);
-	dev_info(ti->dev, "IRQ status: 0x%02x\n", val);
 	d2l_write(ti->i2c, REG_IRQ_STAT, val);
-
-	dev_info(ti->dev, "Dumping SN65DSI83 registers 0x00 to 0x3F:\n");
-	for (i = 0x00; i <= 0x3F; i++) {
-		u8 val = 0;
-		d2l_read(ti->i2c, i, &val);
-		dev_info(ti->dev, "Reg[0x%02X] = 0x%02X\n", i, val);
-	}
+	
 }
-
 
 static enum drm_mode_status
 ti_mode_valid(struct drm_bridge *bridge,
@@ -727,13 +563,12 @@ static int ti_bridge_attach(struct drm_bridge *bridge,
 	struct mipi_dsi_host *host;
 	struct mipi_dsi_device *dsi;
 	int ret;
-	
-	dev_info(dev, ">>> sn65dsi83_probe() called l3 \n");
 
 	const struct mipi_dsi_device_info info = { .type = "sn65dsi83",
 							.channel = 0,
 							.node = NULL,
 						};
+
 	host = of_find_mipi_dsi_host_by_node(ti->host_node);
 	if (!host) {
 		dev_err(dev, "failed to find dsi host\n");
@@ -750,7 +585,7 @@ static int ti_bridge_attach(struct drm_bridge *bridge,
 	ti->dsi = dsi;
 	dsi->lanes = ti->num_dsi_lanes;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags =  MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_EOT_PACKET | MIPI_DSI_MODE_VIDEO_HSE;
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO; 
 	ret = mipi_dsi_attach(dsi);
 
 	if (ret < 0) {
@@ -783,7 +618,6 @@ static int ti_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	struct ti_data *ti;
 	int ret;
 
-	
 	ti = devm_kzalloc(dev, sizeof(*ti), GFP_KERNEL);
 
 	if (!ti)
@@ -793,9 +627,6 @@ static int ti_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	ti->dev = dev;
 	ti->i2c = client;
-	
-	
-
 
 	ret = drm_of_find_panel_or_bridge(dev->of_node, SN65DSI83_LVDS_OUT0,
 					   0, &panel, NULL);
@@ -805,9 +636,6 @@ static int ti_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		return -ENODEV;
 
 	ti->panel_bridge = devm_drm_panel_bridge_add(dev, panel);
-
-	
-
 	if (IS_ERR(ti->panel_bridge))
 		return PTR_ERR(ti->panel_bridge);
 
@@ -835,7 +663,6 @@ static int ti_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		dev_err(dev, "cannot get enable-gpios %d\n", ret);
 		return ret;
 	}
-	dev_info(dev, ">>> sn65dsi83_probe() called l2 \n");
 
 	ti->bridge.funcs = &ti_bridge_funcs;
 	ti->bridge.of_node = dev->of_node;

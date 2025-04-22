@@ -5322,6 +5322,10 @@ static void r8152b_init(struct r8152 *tp)
 
 	r8152_aldps_en(tp, false);
 
+	/*this is added for LAN LED blinking by DEEPAK KUMAR*/
+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_LED_FEATURE, 0x0006);
+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_LEDSEL, 0x002B);
+
 	if (tp->version == RTL_VER_01) {
 		ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_LED_FEATURE);
 		ocp_data &= ~LED_MODE_MASK;
