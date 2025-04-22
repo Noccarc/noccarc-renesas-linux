@@ -42,6 +42,9 @@ source "drivers/staging/rtl8188eu/Kconfig"
 
 source "drivers/staging/rts5208/Kconfig"
 
+source "drivers/staging/rtl8733BU/Kconfig"
+
+
 source "drivers/staging/octeon/Kconfig"
 
 source "drivers/staging/octeon-usb/Kconfig"

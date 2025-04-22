@@ -347,6 +347,79 @@ static void rzg2l_mipi_dsi_stop(struct rzg2l_mipi_dsi *dsi)
 	pm_runtime_put(dsi->dev);
 }
 
+// static void rzg2l_mipi_dsi_set_display_timing(struct rzg2l_mipi_dsi *dsi,
+// 					      const struct drm_display_mode *mode)
+// {
+// 	u32 vich1ppsetr;
+// 	u32 vich1vssetr;
+// 	u32 vich1vpsetr;
+// 	u32 vich1hssetr;
+// 	u32 vich1hpsetr;
+// 	int dsi_format;
+// 	u32 delay[2];
+// 	u8 index;
+
+// 	/* Configuration for Pixel Packet */
+// 	dsi_format = mipi_dsi_pixel_format_to_bpp(dsi->format);
+// 	switch (dsi_format) {
+// 	case 24:
+// 		vich1ppsetr = VICH1PPSETR_DT_RGB24;
+// 		break;
+// 	case 18:
+// 		vich1ppsetr = VICH1PPSETR_DT_RGB18;
+// 		break;
+// 	}
+
+// 	if ((dsi->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE) &&
+// 	    !(dsi->mode_flags & MIPI_DSI_MODE_VIDEO_BURST))
+// 		vich1ppsetr |= VICH1PPSETR_TXESYNC_PULSE;
+
+// 	rzg2l_mipi_dsi_link_write(dsi, VICH1PPSETR, vich1ppsetr);
+
+// 	/* Configuration for Video Parameters */
+// 	vich1vssetr = VICH1VSSETR_VACTIVE(mode->vdisplay) |
+// 		      VICH1VSSETR_VSA(mode->vsync_end - mode->vsync_start);
+// 	vich1vssetr |= (mode->flags & DRM_MODE_FLAG_PVSYNC) ?
+// 			VICH1VSSETR_VSPOL_HIGH : VICH1VSSETR_VSPOL_LOW;
+
+// 	vich1vpsetr = VICH1VPSETR_VFP(mode->vsync_start - mode->vdisplay) |
+// 		      VICH1VPSETR_VBP(mode->vtotal - mode->vsync_end);
+
+// 	vich1hssetr = VICH1HSSETR_HACTIVE(mode->hdisplay) |
+// 		      VICH1HSSETR_HSA(mode->hsync_end - mode->hsync_start);
+// 	vich1hssetr |= (mode->flags & DRM_MODE_FLAG_PHSYNC) ?
+// 			VICH1HSSETR_HSPOL_HIGH : VICH1HSSETR_HSPOL_LOW;
+
+// 	vich1hpsetr = VICH1HPSETR_HFP(mode->hsync_start - mode->hdisplay) |
+// 		      VICH1HPSETR_HBP(mode->htotal - mode->hsync_end);
+
+// 	rzg2l_mipi_dsi_link_write(dsi, VICH1VSSETR, vich1vssetr);
+// 	rzg2l_mipi_dsi_link_write(dsi, VICH1VPSETR, vich1vpsetr);
+// 	rzg2l_mipi_dsi_link_write(dsi, VICH1HSSETR, vich1hssetr);
+// 	rzg2l_mipi_dsi_link_write(dsi, VICH1HPSETR, vich1hpsetr);
+
+// 	/*
+// 	 * Configuration for Delay Value
+// 	 * Delay value based on 2 ranges of video clock.
+// 	 * 74.25MHz is videoclock of HD@60p or FHD@30p
+// 	 */
+// 	if (mode->clock > 74250) {
+// 		delay[0] = 231;
+// 		delay[1] = 216;
+// 	} else {
+// 		delay[0] = 220;
+// 		delay[1] = 212;
+// 	}
+
+// 	if (dsi->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS)
+// 		index = 0;
+// 	else
+// 		index = 1;
+
+// 	rzg2l_mipi_dsi_link_write(dsi, VICH1SET1R,
+// 				  VICH1SET1R_DLY(delay[index]));
+// }
+
 static void rzg2l_mipi_dsi_set_display_timing(struct rzg2l_mipi_dsi *dsi,
 					      const struct drm_display_mode *mode)
 {
@@ -370,9 +443,21 @@ static void rzg2l_mipi_dsi_set_display_timing(struct rzg2l_mipi_dsi *dsi,
 		break;
 	}
 
-	if ((dsi->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE) &&
-	    !(dsi->mode_flags & MIPI_DSI_MODE_VIDEO_BURST))
+
+	dev_info(dsi->dev, "Timing - H: active=%d, hsync=%d, hfp=%d, hbp=%d\n",
+         mode->hdisplay, mode->hsync_end - mode->hsync_start,
+         mode->hsync_start - mode->hdisplay,
+         mode->htotal - mode->hsync_end);
+
+	dev_info(dsi->dev, "Timing - V: active=%d, vsync=%d, vfp=%d, vbp=%d\n",
+			mode->vdisplay, mode->vsync_end - mode->vsync_start,
+			mode->vsync_start - mode->vdisplay,
+         mode->vtotal - mode->vsync_end);
+
+	if (dsi->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
 		vich1ppsetr |= VICH1PPSETR_TXESYNC_PULSE;
+	if (dsi->mode_flags & MIPI_DSI_MODE_VIDEO_BURST)
+		vich1ppsetr &= ~VICH1PPSETR_TXESYNC_PULSE;
 
 	rzg2l_mipi_dsi_link_write(dsi, VICH1PPSETR, vich1ppsetr);
 
@@ -398,6 +483,13 @@ static void rzg2l_mipi_dsi_set_display_timing(struct rzg2l_mipi_dsi *dsi,
 	rzg2l_mipi_dsi_link_write(dsi, VICH1HSSETR, vich1hssetr);
 	rzg2l_mipi_dsi_link_write(dsi, VICH1HPSETR, vich1hpsetr);
 
+	dev_info(dsi->dev, "VICH1PPSETR = 0x%x\n", vich1ppsetr);
+	dev_info(dsi->dev, "VICH1VSSETR = 0x%x\n", vich1vssetr);
+	dev_info(dsi->dev, "VICH1VPSETR = 0x%x\n", vich1vpsetr);
+	dev_info(dsi->dev, "VICH1HSSETR = 0x%x\n", vich1hssetr);
+	dev_info(dsi->dev, "VICH1HPSETR = 0x%x\n", vich1hpsetr);
+	
+
 	/*
 	 * Configuration for Delay Value
 	 * Delay value based on 2 ranges of video clock.
@@ -408,14 +500,14 @@ static void rzg2l_mipi_dsi_set_display_timing(struct rzg2l_mipi_dsi *dsi,
 		delay[1] = 216;
 	} else {
 		delay[0] = 220;
-		delay[1] = 212;
+		delay[1] = 240;
 	}
 
 	if (dsi->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS)
 		index = 0;
 	else
 		index = 1;
-
+	dev_info(dsi->dev, "Delay (VICH1SET1R) = 0x%x\n", delay[index]);
 	rzg2l_mipi_dsi_link_write(dsi, VICH1SET1R,
 				  VICH1SET1R_DLY(delay[index]));
 }
@@ -444,8 +536,10 @@ static int rzg2l_mipi_dsi_start_hs_clock(struct rzg2l_mipi_dsi *dsi)
 			return ret;
 		}
 	}
+	dev_info(dsi->dev, "HSCLKSETR = 0x%08x\n", hsclksetr);
+	
 
-	dev_dbg(dsi->dev, "Start High Speed Clock with %s clock mode",
+	dev_info(dsi->dev, "Start High Speed Clock with %s clock mode",
 		is_clk_cont ? "continuous" : "non-continuous");
 
 	return 0;
@@ -485,7 +579,7 @@ static int rzg2l_mipi_dsi_start_video(struct rzg2l_mipi_dsi *dsi)
 
 	/* Configuration for Blanking sequence and start video input*/
 	vich1set0r = VICH1SET0R_HFPNOLP | VICH1SET0R_HBPNOLP |
-		     VICH1SET0R_HSANOLP | VICH1SET0R_VSTART;
+		     VICH1SET0R_HSANOLP | VICH1SET0R_VSTART; 
 	rzg2l_mipi_dsi_link_write(dsi, VICH1SET0R, vich1set0r);
 
 	ret = read_poll_timeout(rzg2l_mipi_dsi_link_read, status,
@@ -526,23 +620,69 @@ err:
  * Bridge
  */
 
+// static int rzg2l_mipi_dsi_attach(struct drm_bridge *bridge,
+// 				 enum drm_bridge_attach_flags flags)
+// {
+// 	struct rzg2l_mipi_dsi *dsi = bridge_to_rzg2l_mipi_dsi(bridge);
+// 	int ret;
+
+// 	dsi->next_bridge = devm_drm_of_get_bridge(dsi->dev, dsi->dev->of_node,
+// 						  1, 0);
+// 	if (IS_ERR(dsi->next_bridge)) {
+// 		ret = PTR_ERR(dsi->next_bridge);
+// 		dev_err(dsi->dev, "failed to get next bridge: %d\n", ret);
+// 		return ret;
+// 	}
+
+// 	return drm_bridge_attach(bridge->encoder, dsi->next_bridge, bridge,
+// 				 flags);
+// }
+
 static int rzg2l_mipi_dsi_attach(struct drm_bridge *bridge,
 				 enum drm_bridge_attach_flags flags)
 {
 	struct rzg2l_mipi_dsi *dsi = bridge_to_rzg2l_mipi_dsi(bridge);
-	int ret;
+	int ret, retry_count = 5;
 
-	dsi->next_bridge = devm_drm_of_get_bridge(dsi->dev, dsi->dev->of_node,
-						  1, 0);
+	while (retry_count--) {
+		dsi->next_bridge = devm_drm_of_get_bridge(dsi->dev, dsi->dev->of_node, 1, 0);
+		if (IS_ERR(dsi->next_bridge)) {
+			ret = PTR_ERR(dsi->next_bridge);
+			if (ret != -EPROBE_DEFER) {
+				dev_err(dsi->dev, "failed to get next bridge @samar: %d\n", ret);
+				return ret;
+			}
+			dev_info(dsi->dev, "bridge not ready, retrying (%d attempts left)\n", retry_count);
+			msleep(100);
+		} else {
+			/* Success: bridge is ready */
+			dev_info(dsi->dev, "bridge acquired after %d retries\n", 5 - retry_count);
+			break;
+		}
+	}
+
+	/* Final check after retries exhausted */
 	if (IS_ERR(dsi->next_bridge)) {
 		ret = PTR_ERR(dsi->next_bridge);
-		dev_err(dsi->dev, "failed to get next bridge: %d\n", ret);
+		dev_err(dsi->dev, "failed to get bridge after retries: %d\n", ret);
 		return ret;
 	}
 
-	return drm_bridge_attach(bridge->encoder, dsi->next_bridge, bridge,
-				 flags);
+	/* Attach the bridge */
+	ret = drm_bridge_attach(bridge->encoder, dsi->next_bridge, bridge, flags);
+	if (ret) {
+		dev_err(dsi->dev, "failed to attach bridge: %d\n", ret);
+		return ret;
+	}
+
+	if (dsi->next_bridge && dsi->next_bridge->of_node) {
+		dev_info(dsi->dev, "Attached bridge node: %pOF\n", dsi->next_bridge->of_node);
+	}
+	dev_info(dsi->dev, "dsi attached with %u lanes, format=0x%x\n", dsi->lanes, dsi->format);
+
+	return 0;
 }
+
 
 static void rzg2l_mipi_dsi_atomic_enable(struct drm_bridge *bridge,
 					 struct drm_bridge_state *old_bridge_state)
@@ -638,7 +778,7 @@ static int rzg2l_mipi_dsi_host_attach(struct mipi_dsi_host *host,
 
 	dsi->lanes = device->lanes;
 	dsi->format = device->format;
-	dsi->mode_flags = device->mode_flags;
+	dsi->mode_flags = device->mode_flags & ~MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
 	/* Calculate the Final Division ratio setting for the MIPI clock */
 	dsi_div_ab = mipi_dsi_pixel_format_to_bpp(dsi->format) / dsi->lanes;

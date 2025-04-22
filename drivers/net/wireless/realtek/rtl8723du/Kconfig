@@ -1,0 +1,14 @@
+config HELLO_MODULE
+    tristate "Hello World Module"
+    depends on NET
+    help
+      This is a simple Hello World kernel module.
+config RTW8723DU
+    tristate "Realtek 8723DU USB WiFi driver"
+    depends on USB && WLAN_VENDOR_REALTEK
+    select MAC80211
+    help
+      This module adds support for the Realtek 8723DU USB WiFi driver.
+
+      If you choose to build it as a module, it will be called rtw_8723du.
+

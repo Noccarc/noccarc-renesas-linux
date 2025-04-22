@@ -69,14 +69,14 @@ int rcar_du_encoder_init(struct rcar_du_device *rcdu,
 	struct drm_encoder *encoder;
 	struct drm_bridge *bridge;
 	int ret;
-
+	dev_info(rcdu->dev, ">>>  sn65dsi83_probe() l0 returned:\n");
 	renc = devm_kzalloc(rcdu->dev, sizeof(*renc), GFP_KERNEL);
 	if (renc == NULL)
 		return -ENOMEM;
 
 	renc->output = output;
 	encoder = rcar_encoder_to_drm_encoder(renc);
-
+	
 	dev_dbg(rcdu->dev, "initializing encoder %pOF for output %u\n",
 		enc_node, output);
 
@@ -136,6 +136,7 @@ int rcar_du_encoder_init(struct rcar_du_device *rcdu,
 	 * connector.
 	 */
 	ret = drm_bridge_attach(encoder, bridge, NULL, 0);
+	dev_info(rcdu->dev, ">>> drm_bridge_attach() returned: %d\n", ret);
 	if (ret) {
 		drm_encoder_cleanup(encoder);
 		return ret;

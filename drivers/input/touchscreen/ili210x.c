@@ -45,6 +45,7 @@ struct ili210x {
 	struct touchscreen_properties prop;
 	const struct ili2xxx_chip *chip;
 	bool stop;
+	u16 res_x, res_y, res_x_dt, res_y_dt;
 };
 
 static int ili210x_read_reg(struct i2c_client *client,
@@ -281,6 +282,13 @@ static bool ili210x_report_events(struct ili210x *priv, u8 *touchdata)
 	for (i = 0; i < priv->chip->max_touches; i++) {
 		touch = priv->chip->parse_touch_data(touchdata, i, &x, &y, &z);
 
+		/* map coordinates based on dt @deepak */
+		if(priv->res_x_dt > 0  && priv->res_y_dt > 0 && priv->res_x > 0 && priv->res_y > 0){
+			x = (x*(priv->res_x_dt))/(priv->res_x);
+			y = (y*(priv->res_y_dt))/(priv->res_y);
+		}
+		
+
 		input_mt_slot(input, i);
 		if (input_mt_report_slot_state(input, MT_TOOL_FINGER, touch)) {
 			touchscreen_report_pos(input, &priv->prop, x, y, true);
@@ -393,7 +401,6 @@ static int ili210x_i2c_probe(struct i2c_client *client,
 	struct gpio_desc *reset_gpio;
 	struct input_dev *input;
 	int error;
-	unsigned int max_xy;
 
 	dev_dbg(dev, "Probing for ILI210X I2C Touschreen driver");
 
@@ -443,10 +450,53 @@ static int ili210x_i2c_probe(struct i2c_client *client,
 	input->name = "ILI210x Touchscreen";
 	input->id.bustype = BUS_I2C;
 
-	/* Multi touch */
-	max_xy = (chip->resolution ?: SZ_64K) - 1;
-	input_set_abs_params(input, ABS_MT_POSITION_X, 0, max_xy, 0, 0);
-	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, max_xy, 0, 0);
+	/* Get panel data @deepak pansari*/
+	u16 resx=9600, resy=9600;
+	u32 resx_dt, resy_dt;
+	u8 rs[10];
+
+	/* The firmware update blob might have changed the resolution. */
+	error = ili251x_read_reg(client, REG_PANEL_INFO, &rs, sizeof(rs));
+	if (!error) {
+		resx = le16_to_cpup((__le16 *)rs);
+		resy = le16_to_cpup((__le16 *)(rs + 2));
+
+		/* The value reported by the firmware is invalid. */
+		if (!resx || resx == 0xffff || !resy || resy == 0xffff) error = -EINVAL;
+		else{
+			dev_warn(dev, "Invalid resolution reported by controller.\n");
+			resx = 9600;
+			resy = 9600;
+		}
+	}
+
+	priv->res_x = resx;
+	priv->res_y = resy;
+	
+
+	/* check if resolution is defined in device tree */
+	if(device_property_read_u32(dev, "touchscreen-size-x",&resx_dt) < 0 || device_property_read_u32(dev, "touchscreen-size-y",&resy_dt) < 0){
+		dev_warn(dev, "Using default resolution of touch panel.\n");
+		priv->res_x_dt = 0;
+		priv->res_y_dt = 0;
+		/* Multi touch */
+		input_set_abs_params(input, ABS_MT_POSITION_X, 0, resx-1, 0, 0);
+		input_set_abs_params(input, ABS_MT_POSITION_Y, 0, resy-1, 0, 0);
+		input_set_abs_params(input, ABS_X, 0, resx-1, 0, 0);
+		input_set_abs_params(input, ABS_Y, 0, resy-1, 0, 0);
+	}
+	else {
+		/* set max and min resolution */
+		priv->res_x_dt = resx_dt;
+		priv->res_y_dt = resy_dt;
+		/* Multi touch */
+		input_set_abs_params(input, ABS_MT_POSITION_X, 0, resx_dt-1, 0, 0);
+		input_set_abs_params(input, ABS_MT_POSITION_Y, 0, resy_dt-1, 0, 0);
+		input_set_abs_params(input, ABS_X, 0, resx-1, 0, 0);
+		input_set_abs_params(input, ABS_Y, 0, resy-1, 0, 0);
+	}
+
+	
 	if (priv->chip->has_pressure_reg)
 		input_set_abs_params(input, ABS_MT_PRESSURE, 0, 0xa, 0, 0);
 	touchscreen_parse_properties(input, true, &priv->prop);

@@ -568,15 +568,16 @@ static int rcar_du_probe(struct platform_device *pdev)
 	struct drm_device *ddev;
 	struct resource *mem;
 	int ret;
-
+	
 	/* Allocate and initialize the R-Car device structure. */
 	rcdu = devm_kzalloc(&pdev->dev, sizeof(*rcdu), GFP_KERNEL);
+	
 	if (rcdu == NULL)
 		return -ENOMEM;
 
 	rcdu->dev = &pdev->dev;
 	rcdu->info = of_device_get_match_data(rcdu->dev);
-
+	
 	platform_set_drvdata(pdev, rcdu);
 
 	/* I/O resources */
@@ -635,6 +636,7 @@ static struct platform_driver rcar_du_platform_driver = {
 
 static int __init rcar_du_init(void)
 {
+	
 	rcar_du_of_init(rcar_du_of_table);
 
 	return platform_driver_register(&rcar_du_platform_driver);
