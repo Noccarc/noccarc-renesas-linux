@@ -145,6 +145,7 @@ struct sci_port {
 
 	struct dma_chan			*chan_tx;
 	struct dma_chan			*chan_rx;
+	bool rx_irq_enabled;
 
 #ifdef CONFIG_SERIAL_SH_SCI_DMA
 	struct dma_chan			*chan_tx_saved;
@@ -1331,7 +1332,9 @@ static void sci_dma_rx_reenable_irq(struct sci_port *s)
 	scr = serial_port_in(port, SCSCR);
 	if (port->type == PORT_SCIFA || port->type == PORT_SCIFB ||
 	    s->cfg->regtype == SCIx_RZ_SCIFA_REGTYPE) {
+		disable_irq_nosync(s->irqs[SCIx_RXI_IRQ]);
 		enable_irq(s->irqs[SCIx_RXI_IRQ]);
+		s->rx_irq_enabled = true;
 		if (s->cfg->regtype == SCIx_RZ_SCIFA_REGTYPE)
 			scif_set_rtrg(port, s->rx_trigger);
 		else
@@ -1339,6 +1342,9 @@ static void sci_dma_rx_reenable_irq(struct sci_port *s)
 	}
 	serial_port_out(port, SCSCR, scr | SCSCR_RIE);
 }
+
+
+
 
 static void sci_dma_rx_complete(void *arg)
 {
@@ -1622,8 +1628,11 @@ static void sci_request_dma(struct uart_port *port)
 {
 	struct sci_port *s = to_sci_port(port);
 	struct dma_chan *chan;
-
 	dev_dbg(port->dev, "%s: port %d\n", __func__, port->line);
+	dev_info(port->dev, "%s: port %d\n", __func__, port->line);
+
+
+	
 
 	/*
 	 * DMA on console may interfere with Kernel log messages which use
@@ -1631,10 +1640,9 @@ static void sci_request_dma(struct uart_port *port)
 	 */
 	if (uart_console(port))
 		return;
-
 	if (!port->dev->of_node)
 		return;
-
+	
 	s->cookie_tx = -EINVAL;
 
 	/*
@@ -1672,7 +1680,8 @@ static void sci_request_dma(struct uart_port *port)
 		dma_addr_t dma;
 		void *buf;
 
-		s->buf_len_rx = 2 * max_t(size_t, 16, port->fifosize);
+		// s->buf_len_rx = 2 * max_t(size_t, 16, port->fifosize);
+		s->buf_len_rx=256;
 		buf = dma_alloc_coherent(chan->device->dev, s->buf_len_rx * 2,
 					 &dma, GFP_KERNEL);
 		if (!buf) {
@@ -1756,6 +1765,7 @@ static irqreturn_t sci_rx_interrupt(int irq, void *ptr)
 		if (port->type == PORT_SCIFA || port->type == PORT_SCIFB ||
 		    s->cfg->regtype == SCIx_RZ_SCIFA_REGTYPE) {
 			disable_irq_nosync(s->irqs[SCIx_RXI_IRQ]);
+			s->rx_irq_enabled = false;
 			if (s->cfg->regtype == SCIx_RZ_SCIFA_REGTYPE) {
 				scif_set_rtrg(port, 1);
 				scr |= SCSCR_RIE;
@@ -2244,6 +2254,8 @@ static int sci_startup(struct uart_port *port)
 	int ret;
 
 	dev_dbg(port->dev, "%s(%d)\n", __func__, port->line);
+	dev_info(port->dev, "sci_startup : %s(%d)\n", __func__, port->line);
+	
 
 	sci_request_dma(port);
 

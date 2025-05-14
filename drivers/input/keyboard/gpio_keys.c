@@ -448,8 +448,8 @@ static irqreturn_t gpio_keys_irq_isr(int irq, void *dev_id)
 		input_sync(input);
 
 		if (!bdata->release_delay) {
-			input_event(input, EV_KEY, *bdata->code, 0);
-			input_sync(input);
+			//input_event(input, EV_KEY, *bdata->code, 0);
+			//input_sync(input);
 			goto out;
 		}
 

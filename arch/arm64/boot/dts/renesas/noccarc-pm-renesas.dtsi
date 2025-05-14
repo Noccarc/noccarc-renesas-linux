@@ -275,6 +275,7 @@
 			interrupts = <RZG2L_GPIO(20, 0) IRQ_TYPE_LEVEL_LOW>;  //11
 			linux,code = <KEY_1>;
 			label = "sw2";
+			wakeup-source;
 			debounce-interval=<20>;
 		};
         sw-3 {
@@ -282,6 +283,7 @@
 			interrupts = <RZG2L_GPIO(25, 0) IRQ_TYPE_LEVEL_LOW>; //17
 			linux,code = <KEY_2>;
 			label = "sw3";
+			wakeup-source;
 			debounce-interval=<20>;
 		};
         sw-4 {
