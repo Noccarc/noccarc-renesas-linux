@@ -260,50 +260,42 @@
 	};
 	};
 
-	user-button {
+	keys {
 		compatible = "gpio-keys";
-		status = "okay";
 		sw-1 {
-			interrupt-parent = <&pinctrl>;
-			interrupts = <RZG2L_GPIO(20, 1) IRQ_TYPE_LEVEL_HIGH>;  //11
-			linux,code = <KEY_0>;
+			gpio = <&pinctrl RZG2L_GPIO(20, 1) GPIO_ACTIVE_HIGH>;
+			linux,code = <KEY_1>;
 			label = "power";
+			wakeup-source;
 			debounce-interval=<20>;
 		};
        sw-2 {
-			interrupt-parent = <&pinctrl>;
-			interrupts = <RZG2L_GPIO(20, 0) IRQ_TYPE_LEVEL_LOW>;  //11
-			linux,code = <KEY_1>;
+			gpio = <&pinctrl RZG2L_GPIO(20, 0) GPIO_ACTIVE_LOW>;  //11
+			linux,code = <KEY_2>;
 			label = "sw2";
-			wakeup-source;
 			debounce-interval=<20>;
 		};
         sw-3 {
-			interrupt-parent = <&pinctrl>;
-			interrupts = <RZG2L_GPIO(25, 0) IRQ_TYPE_LEVEL_LOW>; //17
-			linux,code = <KEY_2>;
+			gpio = <&pinctrl RZG2L_GPIO(25, 0) GPIO_ACTIVE_LOW>; //17
+			linux,code = <KEY_3>;
 			label = "sw3";
-			wakeup-source;
 			debounce-interval=<20>;
 		};
         sw-4 {
-			interrupt-parent = <&pinctrl>;
-			interrupts = <RZG2L_GPIO(25, 1) IRQ_TYPE_LEVEL_LOW>; //18
-			linux,code = <KEY_3>;
+			gpio = <&pinctrl RZG2L_GPIO(25, 1) GPIO_ACTIVE_LOW>; //18
+			linux,code = <KEY_4>;
 			label = "sw4";
 			debounce-interval=<20>;
 		};
         sw-5 {
-			interrupt-parent = <&pinctrl>;
-			interrupts = <RZG2L_GPIO(26, 0) IRQ_TYPE_LEVEL_LOW>; //19
-			linux,code = <KEY_4>;
+			gpio = <&pinctrl RZG2L_GPIO(26, 0) GPIO_ACTIVE_LOW>; //19
+			linux,code = <KEY_5>;
 			label = "sw5";
 			debounce-interval=<20>;
 		};
         sw-6 {
-			interrupt-parent = <&pinctrl>;
-			interrupts = <RZG2L_GPIO(26, 1) IRQ_TYPE_LEVEL_LOW>; //20
-			linux,code = <KEY_5>;
+			gpio = <&pinctrl RZG2L_GPIO(26, 1) GPIO_ACTIVE_LOW>; //20
+			linux,code = <KEY_6>;
 			label = "sw6";
 			debounce-interval=<20>;
 		};

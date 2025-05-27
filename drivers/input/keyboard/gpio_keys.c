@@ -440,7 +440,7 @@ static irqreturn_t gpio_keys_irq_isr(int irq, void *dev_id)
 
 	spin_lock_irqsave(&bdata->lock, flags);
 
-	if (!bdata->key_pressed) {
+	if (!bdata->key_pressed && gpiod_get_value_cansleep(bdata->gpiod)) {
 		if (bdata->button->wakeup)
 			pm_wakeup_event(bdata->input->dev.parent, 0);
 
@@ -448,8 +448,8 @@ static irqreturn_t gpio_keys_irq_isr(int irq, void *dev_id)
 		input_sync(input);
 
 		if (!bdata->release_delay) {
-			//input_event(input, EV_KEY, *bdata->code, 0);
-			//input_sync(input);
+			input_event(input, EV_KEY, *bdata->code, 0);
+			input_sync(input);
 			goto out;
 		}
 
@@ -561,8 +561,12 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 
 		INIT_DELAYED_WORK(&bdata->work, gpio_keys_gpio_work_func);
 
-		isr = gpio_keys_gpio_isr;
-		irqflags = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING;
+		/*  RZ/V2L don't support both falling-edge and rising-edge detect */
+		//bdata->release_delay = button->debounce_interval;
+		//timer_setup(&bdata->release_timer, gpio_keys_irq_timer, 0);
+
+		isr = gpio_keys_irq_isr;
+		irqflags = (active_low ? IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING);
 
 		switch (button->wakeup_event_action) {
 		case EV_ACT_ASSERTED:
