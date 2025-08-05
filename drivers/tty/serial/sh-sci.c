@@ -1682,6 +1682,10 @@ static void sci_request_dma(struct uart_port *port)
 
 		// s->buf_len_rx = 2 * max_t(size_t, 16, port->fifosize);
 		s->buf_len_rx=2048;
+		if (s->port.line == 1)
+    		s->buf_len_rx = 55;
+		else if (s->port.line == 2)
+			s->buf_len_rx = 4096;
 		buf = dma_alloc_coherent(chan->device->dev, s->buf_len_rx * 2,
 					 &dma, GFP_KERNEL);
 		if (!buf) {
