@@ -5,7 +5,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 
-#define VERSION "Noccarc PM Kernel v1.1.0"
+#define VERSION "Noccarc PM Kernel v1.2.0"
 #define ENTRY_NAME "noccarc_pm_kernel_version"
 
 static int version_show(struct seq_file *m, void *v)

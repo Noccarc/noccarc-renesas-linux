@@ -26,7 +26,7 @@
 	};
 
         chosen {
-                bootargs = "ignore_loglevel";
+                bootargs = "ignore_loglevel selinux=1 security=selinux";
                 stdout-path = "serial0:115200n8";
         };
 
