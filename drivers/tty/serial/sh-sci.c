@@ -1681,13 +1681,16 @@ static void sci_request_dma(struct uart_port *port)
 		void *buf;
 
 		// s->buf_len_rx = 2 * max_t(size_t, 16, port->fifosize);
-		s->buf_len_rx=2048;
+		s->buf_len_rx=128;
 		if (s->port.line == 1)
-    		s->buf_len_rx = 55;
+    		s->buf_len_rx = 128;
 		else if (s->port.line == 2)
-			s->buf_len_rx = 4096;
+			s->buf_len_rx = 2048;
+		
 		buf = dma_alloc_coherent(chan->device->dev, s->buf_len_rx * 2,
 					 &dma, GFP_KERNEL);
+		dev_info(port->dev, "RX DMA buf (port %d): CPU virt=%p, DMA phys=%pad, size=%zu\n",
+         port->line, buf, &dma, s->buf_len_rx * 2);
 		if (!buf) {
 			dev_warn(port->dev,
 				 "Failed to allocate Rx dma buffer, using PIO\n");
