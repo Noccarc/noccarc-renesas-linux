@@ -188,12 +188,7 @@
 		default-state = "on";
 		linux,default-trigger = "heartbeat";
 	};
-	led5 {
-		gpios = <&pinctrl RZG2L_GPIO(37, 0) GPIO_ACTIVE_LOW>; //38
-		label = "com_rec_pdb";
-		default-state = "on";
-		linux,default-trigger = "heartbeat";
-	};
+	
 
 
 	gpio1 {
@@ -264,6 +259,14 @@
 		default-state = "on";
 		linux,default-trigger = "none";
 	};
+
+	gpio13 {
+		gpios = <&pinctrl RZG2L_GPIO(37, 0) GPIO_ACTIVE_LOW>; //24
+		label = "com_rec_pdb";
+		default-state = "on";
+		linux,default-trigger = "none";
+	};
+
 	};
 
 	keys {
